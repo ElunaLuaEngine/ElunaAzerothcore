@@ -40,6 +40,10 @@
 #include <list>
 #include <memory>
 #include <shared_mutex>
+#ifdef ELUNA
+#include "LuaValue.h"
+#include "ElunaMgr.h"
+#endif
 
 class Unit;
 class WorldPacket;
@@ -64,6 +68,9 @@ class StaticTransport;
 class MotionTransport;
 class PathGenerator;
 class WorldSession;
+#ifdef ELUNA
+class Eluna;
+#endif
 
 enum WeatherState : uint32;
 
@@ -522,6 +529,11 @@ public:
         return 0;
     };
 
+    bool IsParentMap() const { return GetParent() == this; }
+#ifdef ELUNA
+    Eluna* GetEluna() const { return sElunaMgr->Get(_elunaInfo); }
+    LuaVal lua_data = LuaVal({});
+#endif
 private:
 
     template<class T> void InitializeObject(T* obj);
@@ -631,6 +643,10 @@ private:
     PendingAddUpdatableObjectList _pendingAddUpdatableObjectList;
     IntervalTimer _updatableObjectListRecheckTimer;
     ZoneWideVisibleWorldObjectsMap _zoneWideVisibleWorldObjectsMap;
+
+#ifdef ELUNA
+    ElunaInfo _elunaInfo;
+#endif
 };
 
 enum InstanceResetMethod

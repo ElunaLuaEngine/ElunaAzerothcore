@@ -43,6 +43,9 @@
 #include "TemporarySummon.h"
 #include "Tokenize.h"
 #include "Totem.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 #include "Transport.h"
 #include "UpdateData.h"
 #include "UpdateFieldFlags.h"
@@ -2124,6 +2127,11 @@ void WorldObject::SetMap(Map* map)
     m_currMap = map;
     m_mapId = map->GetId();
     m_InstanceId = map->GetInstanceId();
+#ifdef ELUNA
+    // Reset MAP processor
+    if (elunaMapEvents)
+        elunaMapEvents.reset();
+#endif
 
     sScriptMgr->OnWorldObjectSetMap(this, map);
 }
@@ -3152,3 +3160,36 @@ bool WorldObject::CanBeAddedToMapUpdateList()
 
     return false;
 }
+
+#ifdef ELUNA
+Eluna* WorldObject::GetEluna() const
+{
+    if (const Map* map = FindMap())
+        return map->GetEluna();
+
+    return nullptr;
+}
+
+ElunaEventProcessor * WorldObject::GetElunaEvents(int32 mapId)
+{
+    Eluna* eluna = mapId == -1 ? sWorld->GetEluna() : GetEluna();
+    if (!eluna)
+        return nullptr;
+
+    EventMgr * mgr = eluna->eventMgr.get();
+    if (!mgr)
+        return nullptr;
+
+        // Select the correct ProcessorInfo slot
+        std::unique_ptr<ElunaProcessorInfo>&info = (mapId == -1) ? elunaWorldEvents : elunaMapEvents;
+
+        // Lazily create processor + ProcessorInfo handle
+        if (!info)
+        {
+            uint64 id = mgr->CreateObjectProcessor(this);
+            info = std::make_unique<ElunaProcessorInfo>(mgr, id);
+        }
+
+        return mgr->GetObjectProcessor(info->GetProcessorId());
+}
+#endif

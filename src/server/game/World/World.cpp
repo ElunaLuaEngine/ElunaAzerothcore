@@ -90,6 +90,11 @@
 #include "WardenCheckMgr.h"
 #include "WaypointMovementGenerator.h"
 #include "WeatherMgr.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#include "ElunaLoader.h"
+#include "ElunaConfig.h"
+#endif
 #include "WhoListCacheMgr.h"
 #include "WorldGlobals.h"
 #include "WorldPacket.h"
@@ -342,6 +347,25 @@ void World::SetInitialWorldSettings()
             exit(1);
         }
     }
+
+#ifdef ELUNA
+    ///- Initialize Lua Engine
+    LOG_INFO("server.loading", "Loading Eluna config...");
+    sElunaConfig->Initialize();
+
+        ///- Initialize Lua Engine
+        if (sElunaConfig->IsElunaEnabled())
+        {
+            LOG_INFO("server.loading", "Loading Lua scripts...");
+            sElunaLoader->LoadScripts();
+
+                if (sElunaConfig->GetConfig(CONFIG_ELUNA_SCRIPT_RELOADER))
+                {
+                    LOG_INFO("server.loading", "Loading Eluna script reloader...");
+                    //sElunaLoader->InitializeFileWatcher();
+                }
+        }
+#endif
 
     ///- Initialize pool manager
     sPoolMgr->Initialize();
@@ -855,6 +879,15 @@ void World::SetInitialWorldSettings()
     LOG_INFO("server.loading", "Loading Creature Text Locales...");
     sCreatureTextMgr->LoadCreatureTextLocales();
 
+#ifdef ELUNA
+    if (sElunaConfig->IsElunaEnabled())
+    {
+        LOG_INFO("server.loading", "Starting Eluna world state...");
+        _elunaInfo = { ElunaInfoKey::MakeGlobalKey(0) };
+        sElunaMgr->Create(nullptr, _elunaInfo);
+    }
+#endif
+
     LOG_INFO("server.loading", "Loading Scripts...");
     sScriptMgr->LoadDatabase();
 
@@ -976,6 +1009,11 @@ void World::SetInitialWorldSettings()
     LOG_INFO("server.loading", "Calculate Guild Cap Reset Time...");
     LOG_INFO("server.loading", " ");
     InitGuildResetTime();
+
+#ifdef ELUNA
+    if (GetEluna())
+        GetEluna()->OnConfigLoad(false); // Must be done after Eluna is initialized and scripts have run.
+#endif
 
     LOG_INFO("server.loading", "Load Petitions...");
     sPetitionMgr->LoadPetitions();

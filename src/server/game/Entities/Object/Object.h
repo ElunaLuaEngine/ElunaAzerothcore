@@ -38,10 +38,19 @@
 #include <set>
 #include <sstream>
 #include <string>
+#ifdef ELUNA
+#include "ElunaEventMgr.h"
+#include "LuaValue.h"
+#endif
 
 #include "UpdateFields.h"
 
 class ALEEventProcessor;
+#ifdef ELUNA
+class ElunaEventProcessorInfo;
+class ElunaEventProcessor;
+class Eluna;
+#endif
 
 enum TempSummonType
 {
@@ -728,6 +737,17 @@ public:
     // Event handler
     ALEEventProcessor* ALEEvents;
     EventProcessor m_Events;
+
+#ifdef ELUNA
+    std::unique_ptr<ElunaProcessorInfo> elunaMapEvents;
+    std::unique_ptr<ElunaProcessorInfo> elunaWorldEvents;
+
+    Eluna * GetEluna() const;
+
+    ElunaEventProcessor * GetElunaEvents(int32 mapId);
+
+    LuaVal lua_data = LuaVal({});
+#endif
 
 protected:
     std::string m_name;

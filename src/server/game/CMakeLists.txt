@@ -10,13 +10,32 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #
 
+# Initialize a variable to hold Eluna directories to exclude
+set(ELUNA_EXCLUDE_DIRS)
+
+# Exclude files in the LuaEngine directory for Mangos, CMangos and VMangos
+# or the entire directory if Eluna is disabled
+if(ELUNA)
+  list(APPEND ELUNA_EXCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/methods/Mangos
+    ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/methods/CMangos
+    ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/methods/VMangos
+    ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/methods/TrinityCore
+    )
+else()
+  list(APPEND ELUNA_EXCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine
+    )
+endif()
+
 CU_RUN_HOOK(BEFORE_GAME_LIBRARY)
 
 CollectSourceFiles(
   ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE_SOURCES
   # Exclude
-  ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders)
+  ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders
+  ${ELUNA_EXCLUDE_DIRS})
 
 if (USE_COREPCH)
   set(PRIVATE_PCH_HEADER PrecompiledHeaders/gamePCH.h)
@@ -31,7 +50,8 @@ CollectIncludeDirectories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC_INCLUDES
   # Exclude
-  ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders)
+  ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders
+  ${ELUNA_EXCLUDE_DIRS})
 
 target_include_directories(game-interface
   INTERFACE
@@ -65,5 +85,31 @@ set_target_properties(game
 if (USE_COREPCH)
   add_cxx_pch(game ${PRIVATE_PCH_HEADER})
 endif ()
+
+if(ELUNA)
+  if(WIN32)
+    if (MSVC)
+      add_custom_command(TARGET game
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/lua_scripts/extensions/
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/extensions ${CMAKE_BINARY_DIR}/bin/$(ConfigurationName)/lua_scripts/extensions/
+      )
+    elseif(MINGW)
+      add_custom_command(TARGET game
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin/lua_scripts/extensions/
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/LuaEngine/extensions ${CMAKE_BINARY_DIR}/bin/lua_scripts/extensions/
+      )
+    endif()
+  endif()
+
+  if(UNIX)
+    install(DIRECTORY LuaEngine/extensions DESTINATION bin/lua_scripts/)
+  elseif(WIN32)
+    install(DIRECTORY LuaEngine/extensions DESTINATION "${CMAKE_INSTALL_PREFIX}/lua_scripts/")
+  endif()
+
+  add_subdirectory(LuaEngine)
+endif()
 
 CU_RUN_HOOK(AFTER_GAME_LIBRARY)

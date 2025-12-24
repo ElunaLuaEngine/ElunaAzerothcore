@@ -28,11 +28,18 @@
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "Timer.h"
+#ifdef ELUNA
+#include "ElunaMgr.h"
+#endif
+
 #include <atomic>
 #include <list>
 #include <map>
 #include <unordered_map>
 
+#ifdef ELUNA
+class Eluna;
+#endif
 class Object;
 class WorldPacket;
 class WorldSocket;
@@ -239,6 +246,9 @@ public:
     [[nodiscard]] std::string const& GetRealmName() const override { return _realmName; } // pussywizard
     void SetRealmName(std::string name) override { _realmName = name; } // pussywizard
 
+#ifdef ELUNA
+    Eluna* GetEluna() override { return sElunaMgr->Get(_elunaInfo); }
+#endif
 protected:
     void _UpdateGameTime();
     // callback for UpdateRealmCharacters
@@ -310,6 +320,10 @@ private:
      * @param session The World Session that we are finalizing.
      */
     inline void FinalizePlayerWorldSession(WorldSession* session);
+
+#ifdef ELUNA
+    ElunaInfo _elunaInfo;
+#endif
 };
 
 std::unique_ptr<IWorld>& getWorldInstance();
