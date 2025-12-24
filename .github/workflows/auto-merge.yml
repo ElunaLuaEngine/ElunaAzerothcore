@@ -1,0 +1,72 @@
+name: automerge
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        persist-credentials: true
+
+    - name: Merge AzerothCore
+      run: |
+        git status
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git remote add AC https://github.com/azerothcore/azerothcore-wotlk.git
+        git fetch AC master
+        git merge -m "Merge AzerothCore 3.3.5 to ElunaAzerothcore [skip ci]" AC/master
+        git status
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq libboost-all-dev g++-11
+        sudo update-alternatives \
+          --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
+          --slave /usr/bin/g++ g++ /usr/bin/g++-11
+
+    - name: Configure build
+      run: |
+        mkdir -p bin
+        cd bin
+        cmake ../ \
+          -DWITH_WARNINGS="ON" \
+          -DUSE_COREPCH="ON" \
+          -DUSE_SCRIPTPCH="ON" \
+          -DAPPS_BUILD="all" \
+          -DSCRIPTS="static" \
+          -DCMAKE_BUILD_TYPE="Debug" \
+          -DCMAKE_C_FLAGS="-Werror" \
+          -DCMAKE_CXX_FLAGS="-Werror" \
+          -DCMAKE_C_FLAGS_DEBUG="-DNDEBUG" \
+          -DCMAKE_CXX_FLAGS_DEBUG="-DNDEBUG" \
+          -DCMAKE_INSTALL_PREFIX=check_install \
+          -DBUILD_TESTING="ON"
+
+    - name: Build
+      run: |
+        cd bin
+        make -j 4 -k
+        make install
+
+    - name: Push changes
+      run: |
+        git push origin HEAD
+
+  create-diff:
+    name: Create diff file
+    needs: build
+    uses: ./.github/workflows/create-diff.yml
