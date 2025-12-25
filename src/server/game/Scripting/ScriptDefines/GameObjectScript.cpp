@@ -20,11 +20,21 @@
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 #include "ScriptedGossip.h"
+#include "Player.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 bool ScriptMgr::OnGossipHello(Player* player, GameObject* go)
 {
     ASSERT(player);
     ASSERT(go);
+
+#ifdef ELUNA
+    if (Eluna* e = go->GetEluna())
+        if (e->OnGossipHello(player, go))
+            return true;
+#endif
 
     auto ret = IsValidBoolScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {
@@ -86,6 +96,11 @@ bool ScriptMgr::OnQuestAccept(Player* player, GameObject* go, Quest const* quest
     ASSERT(go);
     ASSERT(quest);
 
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnQuestAccept(player, go, quest);
+#endif
+
     auto ret = IsValidBoolScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {
         return script->CanGameObjectQuestAccept(player, go, quest);
@@ -127,6 +142,11 @@ uint32 ScriptMgr::GetDialogStatus(Player* player, GameObject* go)
     ASSERT(player);
     ASSERT(go);
 
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->GetDialogStatus(player, go);
+#endif
+
     auto tempScript = ScriptRegistry<GameObjectScript>::GetScriptById(go->GetScriptId());
     return tempScript ? tempScript->GetDialogStatus(player, go) : DIALOG_STATUS_SCRIPTED_NO_STATUS;
 }
@@ -134,6 +154,11 @@ uint32 ScriptMgr::GetDialogStatus(Player* player, GameObject* go)
 void ScriptMgr::OnGameObjectDestroyed(GameObject* go, Player* player)
 {
     ASSERT(go);
+
+#ifdef ELUNA
+    if (Eluna* e = go->GetEluna())
+        e->OnDestroyed(go, player);
+#endif
 
     ExecuteScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {
@@ -149,6 +174,11 @@ void ScriptMgr::OnGameObjectDestroyed(GameObject* go, Player* player)
 void ScriptMgr::OnGameObjectDamaged(GameObject* go, Player* player)
 {
     ASSERT(go);
+
+#ifdef ELUNA
+    if (Eluna* e = go->GetEluna())
+        e->OnDamaged(go, player);
+#endif
 
     ExecuteScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {
@@ -180,6 +210,11 @@ void ScriptMgr::OnGameObjectLootStateChanged(GameObject* go, uint32 state, Unit*
 {
     ASSERT(go);
 
+#ifdef ELUNA
+    if (Eluna* e = go->GetEluna())
+        e->OnLootStateChanged(go, state);
+#endif
+
     ExecuteScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {
         script->OnGameObjectLootStateChanged(go, state, unit);
@@ -194,6 +229,11 @@ void ScriptMgr::OnGameObjectLootStateChanged(GameObject* go, uint32 state, Unit*
 void ScriptMgr::OnGameObjectStateChanged(GameObject* go, uint32 state)
 {
     ASSERT(go);
+
+#ifdef ELUNA
+    if (Eluna* e = go->GetEluna())
+        e->OnGameObjectStateChanged(go, state);
+#endif
 
     ExecuteScript<AllGameObjectScript>([&](AllGameObjectScript* script)
     {

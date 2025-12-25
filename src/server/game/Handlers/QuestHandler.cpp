@@ -31,6 +31,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recvData)
 {
@@ -316,6 +319,11 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recvData)
                                 }
                             }
 
+#ifdef ELUNA
+                            if (Eluna* e = _player->GetEluna())
+                                e->OnQuestReward(_player, questgiver, quest, reward);
+#endif
+
                             questgiver->AI()->sQuestReward(_player, quest, reward);
                         }
                         break;
@@ -335,6 +343,11 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recvData)
                                     _player->PlayerTalkClass->SendQuestGiverQuestDetails(nextQuest, guid, true);
                                 }
                             }
+
+#ifdef ELUNA
+                            if (Eluna* e = _player->GetEluna())
+                                e->OnQuestReward(_player, questGiver, quest, reward);
+#endif
 
                             questGiver->AI()->QuestReward(_player, quest, reward);
                         }

@@ -18,11 +18,19 @@
 #include "VehicleScript.h"
 #include "ScriptMgr.h"
 #include "Vehicle.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void ScriptMgr::OnInstall(Vehicle* veh)
 {
     ASSERT(veh);
     ASSERT(veh->GetBase()->IsCreature());
+
+#ifdef ELUNA
+    if (Eluna* e = veh->GetBase()->GetEluna())
+        e->OnInstall(veh);
+#endif
 
     if (auto tempScript = ScriptRegistry<VehicleScript>::GetScriptById(veh->GetBase()->ToCreature()->GetScriptId()))
     {
@@ -34,6 +42,11 @@ void ScriptMgr::OnUninstall(Vehicle* veh)
 {
     ASSERT(veh);
     ASSERT(veh->GetBase()->IsCreature());
+
+#ifdef ELUNA
+    if (Eluna* e = veh->GetBase()->GetEluna())
+        e->OnUninstall(veh);
+#endif
 
     if (auto tempScript = ScriptRegistry<VehicleScript>::GetScriptById(veh->GetBase()->ToCreature()->GetScriptId()))
     {
@@ -58,6 +71,11 @@ void ScriptMgr::OnInstallAccessory(Vehicle* veh, Creature* accessory)
     ASSERT(veh->GetBase()->IsCreature());
     ASSERT(accessory);
 
+#ifdef ELUNA
+    if (Eluna* e = veh->GetBase()->GetEluna())
+        e->OnInstallAccessory(veh, accessory);
+#endif
+
     if (auto tempScript = ScriptRegistry<VehicleScript>::GetScriptById(veh->GetBase()->ToCreature()->GetScriptId()))
     {
         tempScript->OnInstallAccessory(veh, accessory);
@@ -70,6 +88,11 @@ void ScriptMgr::OnAddPassenger(Vehicle* veh, Unit* passenger, int8 seatId)
     ASSERT(veh->GetBase()->IsCreature());
     ASSERT(passenger);
 
+#ifdef ELUNA
+    if (Eluna* e = veh->GetBase()->GetEluna())
+        e->OnAddPassenger(veh, passenger, seatId);
+#endif
+
     if (auto tempScript = ScriptRegistry<VehicleScript>::GetScriptById(veh->GetBase()->ToCreature()->GetScriptId()))
     {
         tempScript->OnAddPassenger(veh, passenger, seatId);
@@ -81,6 +104,11 @@ void ScriptMgr::OnRemovePassenger(Vehicle* veh, Unit* passenger)
     ASSERT(veh);
     ASSERT(veh->GetBase()->IsCreature());
     ASSERT(passenger);
+
+#ifdef ELUNA
+    if (Eluna* e = veh->GetBase()->GetEluna())
+        e->OnRemovePassenger(veh, passenger);
+#endif
 
     if (auto tempScript = ScriptRegistry<VehicleScript>::GetScriptById(veh->GetBase()->ToCreature()->GetScriptId()))
     {

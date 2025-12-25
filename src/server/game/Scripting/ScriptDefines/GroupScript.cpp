@@ -18,10 +18,18 @@
 #include "GroupScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void ScriptMgr::OnGroupAddMember(Group* group, ObjectGuid guid)
 {
     ASSERT(group);
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnAddMember(group, guid);
+#endif
 
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_ADD_MEMBER, script->OnAddMember(group, guid));
 }
@@ -37,6 +45,11 @@ void ScriptMgr::OnGroupRemoveMember(Group* group, ObjectGuid guid, RemoveMethod 
 {
     ASSERT(group);
 
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnRemoveMember(group, guid, method);
+#endif
+
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_REMOVE_MEMBER, script->OnRemoveMember(group, guid, method, kicker, reason));
 }
 
@@ -44,12 +57,22 @@ void ScriptMgr::OnGroupChangeLeader(Group* group, ObjectGuid newLeaderGuid, Obje
 {
     ASSERT(group);
 
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnChangeLeader(group, newLeaderGuid, oldLeaderGuid);
+#endif
+
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_CHANGE_LEADER, script->OnChangeLeader(group, newLeaderGuid, oldLeaderGuid));
 }
 
 void ScriptMgr::OnGroupDisband(Group* group)
 {
     ASSERT(group);
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnDisband(group);
+#endif
 
     CALL_ENABLED_HOOKS(GroupScript, GROUPHOOK_ON_DISBAND, script->OnDisband(group));
 }

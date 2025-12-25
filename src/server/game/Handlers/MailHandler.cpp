@@ -31,6 +31,9 @@
 #include "ScriptMgr.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 #define MAX_INBOX_CLIENT_CAPACITY 50
 
@@ -283,6 +286,17 @@ void WorldSession::HandleSendMail(WorldPacket& recvData)
         player->SendMailResult(0, MAIL_SEND, MAIL_ERR_INTERNAL_ERROR);
         return;
     }
+
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+    {
+        if (!e->OnSendMail(player, receiverGuid))
+        {
+            player->SendMailResult(0, MAIL_SEND, MAIL_ERR_EQUIP_ERROR);
+            return;
+        }
+    }
+#endif
 
     player->SendMailResult(0, MAIL_SEND, MAIL_OK);
 

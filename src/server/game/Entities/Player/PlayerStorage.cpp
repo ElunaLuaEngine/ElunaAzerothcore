@@ -65,6 +65,9 @@
 #include "Util.h"
 #include "World.h"
 #include "WorldPacket.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 /// @todo: this import is not necessary for compilation and marked as unused by the IDE
 //  however, for some reasons removing it would cause a damn linking issue
@@ -2338,6 +2341,15 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         return result;
     }
 
+#ifdef ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        InventoryResult eres = e->OnCanUseItem(this, proto->ItemId);
+        if (eres != EQUIP_ERR_OK)
+            return eres;
+    }
+#endif
+
     return EQUIP_ERR_OK;
 }
 
@@ -2932,6 +2944,11 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
                 _ApplyItemMods(pItem, slot, false);
             }
 
+#ifdef ELUNA
+            if (Eluna* e = GetEluna())
+                e->OnItemUnEquip(this, pItem, slot);
+#endif
+
             m_items[slot] = nullptr;
 
             // remove item dependent auras and casts (only weapon and armor slots)
@@ -3089,6 +3106,11 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 
                 // equipment visual show
                 SetVisibleItemSlot(slot, nullptr);
+
+#ifdef ELUNA
+                if (Eluna* e = GetEluna())
+                    e->OnItemUnEquip(this, pItem, slot);
+#endif
             }
 
             m_items[slot] = nullptr;

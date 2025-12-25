@@ -18,10 +18,19 @@
 #include "LootScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
+#include "Player.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void ScriptMgr::OnLootMoney(Player* player, uint32 gold)
 {
     ASSERT(player);
+
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnLootMoney(player, gold);
+#endif
 
     CALL_ENABLED_HOOKS(LootScript, LOOTHOOK_ON_LOOT_MONEY, script->OnLootMoney(player, gold));
 }

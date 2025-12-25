@@ -18,6 +18,10 @@
 #include "PlayerScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
+#include "Player.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void ScriptMgr::OnPlayerBeforeDurabilityRepair(Player* player, ObjectGuid npcGUID, ObjectGuid itemGUID, float& discountMod, uint8 guildBank)
 {
@@ -26,11 +30,19 @@ void ScriptMgr::OnPlayerBeforeDurabilityRepair(Player* player, ObjectGuid npcGUI
 
 void ScriptMgr::OnPlayerGossipSelect(Player* player, uint32 menu_id, uint32 sender, uint32 action)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->HandleGossipSelectOption(player, menu_id, sender, action, "");
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_GOSSIP_SELECT, script->OnPlayerGossipSelect(player, menu_id, sender, action));
 }
 
 void ScriptMgr::OnPlayerGossipSelectCode(Player* player, uint32 menu_id, uint32 sender, uint32 action, const char* code)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->HandleGossipSelectOption(player, menu_id, sender, action, code);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_GOSSIP_SELECT_CODE, script->OnPlayerGossipSelectCode(player, menu_id, sender, action, code));
 }
 
@@ -71,6 +83,10 @@ bool ScriptMgr::OnPlayerCanFlyInZone(Player* player, uint32 mapId, uint32 zoneId
 
 void ScriptMgr::OnPlayerPVPKill(Player* killer, Player* killed)
 {
+#ifdef ELUNA
+    if (Eluna* e = killer->GetEluna())
+        e->OnPVPKill(killer, killed);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_PVP_KILL, script->OnPlayerPVPKill(killer, killed));
 }
 
@@ -81,6 +97,10 @@ void ScriptMgr::OnPlayerPVPFlagChange(Player* player, bool state)
 
 void ScriptMgr::OnPlayerCreatureKill(Player* killer, Creature* killed)
 {
+#ifdef ELUNA
+    if (Eluna* e = killer->GetEluna())
+        e->OnCreatureKill(killer, killed);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_CREATURE_KILL, script->OnPlayerCreatureKill(killer, killed));
 }
 
@@ -91,21 +111,37 @@ void ScriptMgr::OnPlayerCreatureKilledByPet(Player* petOwner, Creature* killed)
 
 void ScriptMgr::OnPlayerKilledByCreature(Creature* killer, Player* killed)
 {
+#ifdef ELUNA
+    if (Eluna* e = killer->GetEluna())
+        e->OnPlayerKilledByCreature(killer, killed);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE, script->OnPlayerKilledByCreature(killer, killed));
 }
 
 void ScriptMgr::OnPlayerLevelChanged(Player* player, uint8 oldLevel)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnLevelChanged(player, oldLevel);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_LEVEL_CHANGED, script->OnPlayerLevelChanged(player, oldLevel));
 }
 
 void ScriptMgr::OnPlayerFreeTalentPointsChanged(Player* player, uint32 points)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnFreeTalentPointsChanged(player, points);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_FREE_TALENT_POINTS_CHANGED, script->OnPlayerFreeTalentPointsChanged(player, points));
 }
 
 void ScriptMgr::OnPlayerTalentsReset(Player* player, bool noCost)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnTalentsReset(player, noCost);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_TALENTS_RESET, script->OnPlayerTalentsReset(player, noCost));
 }
 
@@ -116,6 +152,10 @@ void ScriptMgr::OnPlayerAfterSpecSlotChanged(Player* player, uint8 newSlot)
 
 void ScriptMgr::OnPlayerMoneyChanged(Player* player, int32& amount)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnMoneyChanged(player, amount);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_MONEY_CHANGED, script->OnPlayerMoneyChanged(player, amount));
 }
 
@@ -126,11 +166,19 @@ void ScriptMgr::OnPlayerBeforeLootMoney(Player* player, Loot* loot)
 
 void ScriptMgr::OnPlayerGiveXP(Player* player, uint32& amount, Unit* victim, uint8 xpSource)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnGiveXP(player, amount, victim);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_GIVE_EXP, script->OnPlayerGiveXP(player, amount, victim, xpSource));
 }
 
 bool ScriptMgr::OnPlayerReputationChange(Player* player, uint32 factionID, int32& standing, bool incremental)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnReputationChange(player, factionID, standing, incremental);
+#endif
     CALL_ENABLED_BOOLEAN_HOOKS(PlayerScript, PLAYERHOOK_ON_REPUTATION_CHANGE, !script->OnPlayerReputationChange(player, factionID, standing, incremental));
 }
 
@@ -146,6 +194,10 @@ void ScriptMgr::OnPlayerGiveReputation(Player* player, int32 factionID, float& a
 
 void ScriptMgr::OnPlayerLearnSpell(Player* player, uint32 spellID)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnLearnSpell(player, spellID);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_LEARN_SPELL, script->OnPlayerLearnSpell(player, spellID));
 }
 
@@ -156,16 +208,28 @@ void ScriptMgr::OnPlayerForgotSpell(Player* player, uint32 spellID)
 
 void ScriptMgr::OnPlayerDuelRequest(Player* target, Player* challenger)
 {
+#ifdef ELUNA
+    if (Eluna* e = target->GetEluna())
+        e->OnDuelRequest(target, challenger);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_DUEL_REQUEST, script->OnPlayerDuelRequest(target, challenger));
 }
 
 void ScriptMgr::OnPlayerDuelStart(Player* player1, Player* player2)
 {
+#ifdef ELUNA
+    if (Eluna* e = player1->GetEluna())
+        e->OnDuelStart(player1, player2);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_DUEL_START, script->OnPlayerDuelStart(player1, player2));
 }
 
 void ScriptMgr::OnPlayerDuelEnd(Player* winner, Player* loser, DuelCompleteType type)
 {
+#ifdef ELUNA
+    if (Eluna* e = winner->GetEluna())
+        e->OnDuelEnd(winner, loser, type);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_DUEL_END, script->OnPlayerDuelEnd(winner, loser, type));
 }
 
@@ -176,16 +240,28 @@ void ScriptMgr::OnPlayerBeforeSendChatMessage(Player* player, uint32& type, uint
 
 void ScriptMgr::OnPlayerEmote(Player* player, uint32 emote)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnEmote(player, emote);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_EMOTE, script->OnPlayerEmote(player, emote));
 }
 
 void ScriptMgr::OnPlayerTextEmote(Player* player, uint32 textEmote, uint32 emoteNum, ObjectGuid guid)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnTextEmote(player, textEmote, emoteNum, guid);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_TEXT_EMOTE, script->OnPlayerTextEmote(player, textEmote, emoteNum, guid));
 }
 
 void ScriptMgr::OnPlayerSpellCast(Player* player, Spell* spell, bool skipCheck)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnSpellCast(player, spell, skipCheck);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_SPELL_CAST, script->OnPlayerSpellCast(player, spell, skipCheck));
 }
 
@@ -201,6 +277,10 @@ void ScriptMgr::OnPlayerUpdate(Player* player, uint32 p_time)
 
 void ScriptMgr::OnPlayerLogin(Player* player)
 {
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnLogin(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_LOGIN, script->OnPlayerLogin(player));
 }
 
@@ -216,21 +296,37 @@ void ScriptMgr::OnPlayerBeforeLogout(Player* player)
 
 void ScriptMgr::OnPlayerLogout(Player* player)
 {
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnLogout(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_LOGOUT, script->OnPlayerLogout(player));
 }
 
 void ScriptMgr::OnPlayerCreate(Player* player)
 {
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnCreate(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_CREATE, script->OnPlayerCreate(player));
 }
 
 void ScriptMgr::OnPlayerSave(Player* player)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnSave(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_SAVE, script->OnPlayerSave(player));
 }
 
 void ScriptMgr::OnPlayerDelete(ObjectGuid guid, uint32 accountId)
 {
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnDelete(GUID_LOPART(guid));
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_DELETE, script->OnPlayerDelete(guid, accountId));
 }
 
@@ -241,11 +337,19 @@ void ScriptMgr::OnPlayerFailedDelete(ObjectGuid guid, uint32 accountId)
 
 void ScriptMgr::OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapid, bool permanent)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnBindToInstance(player, difficulty, mapid, permanent);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_BIND_TO_INSTANCE, script->OnPlayerBindToInstance(player, difficulty, mapid, permanent));
 }
 
 void ScriptMgr::OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnUpdateZone(player, newZone, newArea);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_UPDATE_ZONE, script->OnPlayerUpdateZone(player, newZone, newArea));
 }
 
@@ -326,6 +430,13 @@ void ScriptMgr::OnPlayerAfterMoveItemFromInventory(Player* player, Item* it, uin
 
 void ScriptMgr::OnPlayerEquip(Player* player, Item* it, uint8 bag, uint8 slot, bool update)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+    {
+        e->OnEquip(player, it, bag, slot); // This should be removed in the future
+        e->OnItemEquip(player, it, slot);
+    }
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_EQUIP, script->OnPlayerEquip(player, it, bag, slot, update));
 }
 
@@ -346,6 +457,10 @@ void ScriptMgr::OnPlayerGetMaxPersonalArenaRatingRequirement(Player const* playe
 
 void ScriptMgr::OnPlayerLootItem(Player* player, Item* item, uint32 count, ObjectGuid lootguid)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnLootItem(player, item, count, lootguid);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_LOOT_ITEM, script->OnPlayerLootItem(player, item, count, lootguid));
 }
 
@@ -356,6 +471,10 @@ void ScriptMgr::OnPlayerBeforeFillQuestLootItem(Player* player, LootItem& item)
 
 void ScriptMgr::OnPlayerStoreNewItem(Player* player, Item* item, uint32 count)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnAdd(player, item);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_STORE_NEW_ITEM, script->OnPlayerStoreNewItem(player, item, count));
 }
 
@@ -386,6 +505,10 @@ bool ScriptMgr::OnPlayerBeforeOpenItem(Player* player, Item* item)
 
 void ScriptMgr::OnPlayerFirstLogin(Player* player)
 {
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnFirstLogin(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_FIRST_LOGIN, script->OnPlayerFirstLogin(player));
 }
 
@@ -786,6 +909,10 @@ void ScriptMgr::OnPlayerSetServerSideVisibilityDetect(Player* player, ServerSide
 
 void ScriptMgr::OnPlayerResurrect(Player* player, float restore_percent, bool applySickness)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnResurrect(player);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_PLAYER_RESURRECT, script->OnPlayerResurrect(player, restore_percent, applySickness));
 }
 
@@ -821,6 +948,10 @@ bool ScriptMgr::OnPlayerCanUseChat(Player* player, uint32 type, uint32 language,
 
 void ScriptMgr::OnPlayerLearnTalents(Player* player, uint32 talentId, uint32 talentRank, uint32 spellid)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnLearnTalents(player, talentId, talentRank, spellid);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_PLAYER_LEARN_TALENTS, script->OnPlayerLearnTalents(player, talentId, talentRank, spellid));
 }
 
@@ -836,6 +967,15 @@ void ScriptMgr::OnPlayerLeaveCombat(Player* player)
 
 void ScriptMgr::OnPlayerQuestAbandon(Player* player, uint32 questId)
 {
+#ifdef ELUNA
+    // we can potentially add more quest status hooks here later on
+    if (Eluna* e = player->GetEluna())
+    {
+        QuestStatus qStatus = player->GetQuestStatus(questId);
+        e->OnQuestStatusChanged(player, questId, qStatus);
+        e->OnQuestAbandon(player, questId); // Possibly deprecate this in the future
+    }
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_QUEST_ABANDON, script->OnPlayerQuestAbandon(player, questId));
 }
 
@@ -887,6 +1027,10 @@ void ScriptMgr::OnPlayerBeforeUpdateSkill(Player* player, uint32 skillId, uint32
 
 void ScriptMgr::OnPlayerUpdateSkill(Player* player, uint32 skillId, uint32 value, uint32 max, uint32 step, uint32 newValue)
 {
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnSkillChange(player, skillId, newValue);
+#endif
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_UPDATE_SKILL, script->OnPlayerUpdateSkill(player, skillId, value, max, step, newValue));
 }
 

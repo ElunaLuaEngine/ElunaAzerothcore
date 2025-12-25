@@ -18,11 +18,19 @@
 #include "AuctionHouseScript.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void ScriptMgr::OnAuctionAdd(AuctionHouseObject* ah, AuctionEntry* entry)
 {
     ASSERT(ah);
     ASSERT(entry);
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnAdd(ah, entry);
+#endif
 
     CALL_ENABLED_HOOKS(AuctionHouseScript, AUCTIONHOUSEHOOK_ON_AUCTION_ADD, script->OnAuctionAdd(ah, entry));
 }
@@ -32,6 +40,11 @@ void ScriptMgr::OnAuctionRemove(AuctionHouseObject* ah, AuctionEntry* entry)
     ASSERT(ah);
     ASSERT(entry);
 
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnRemove(ah, entry);
+#endif
+
     CALL_ENABLED_HOOKS(AuctionHouseScript, AUCTIONHOUSEHOOK_ON_AUCTION_REMOVE, script->OnAuctionRemove(ah, entry));
 }
 
@@ -40,6 +53,11 @@ void ScriptMgr::OnAuctionSuccessful(AuctionHouseObject* ah, AuctionEntry* entry)
     ASSERT(ah);
     ASSERT(entry);
 
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnSuccessful(ah, entry);
+#endif
+
     CALL_ENABLED_HOOKS(AuctionHouseScript, AUCTIONHOUSEHOOK_ON_AUCTION_SUCCESSFUL, script->OnAuctionSuccessful(ah, entry));
 }
 
@@ -47,6 +65,11 @@ void ScriptMgr::OnAuctionExpire(AuctionHouseObject* ah, AuctionEntry* entry)
 {
     ASSERT(ah);
     ASSERT(entry);
+
+#ifdef ELUNA
+    if (Eluna* e = sWorld->GetEluna())
+        e->OnExpire(ah, entry);
+#endif
 
     CALL_ENABLED_HOOKS(AuctionHouseScript, AUCTIONHOUSEHOOK_ON_AUCTION_EXPIRE, script->OnAuctionExpire(ah, entry));
 }

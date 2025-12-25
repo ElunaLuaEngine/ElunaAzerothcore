@@ -52,6 +52,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include <cmath>
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 /// @todo: this import is not necessary for compilation and marked as unused by the IDE
 //  however, for some reasons removing it would cause a damn linking issue
@@ -3751,6 +3754,11 @@ void Spell::_cast(bool skipCheck)
         cancel();
         return;
     }
+
+#ifdef ELUNA
+    if (Eluna* e = m_caster->GetEluna())
+        e->OnSpellCast(this, skipCheck);
+#endif
 
     // Xinef: implement attribute SPELL_ATTR1_DISMISS_PET_FIRST, on spell cast current pet is dismissed and charms are removed
     if (m_spellInfo->HasAttribute(SPELL_ATTR1_DISMISS_PET_FIRST))

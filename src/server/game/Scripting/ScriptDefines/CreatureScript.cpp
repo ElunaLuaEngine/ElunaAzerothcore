@@ -20,11 +20,21 @@
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
 #include "ScriptedGossip.h"
+#include "Player.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 bool ScriptMgr::OnGossipHello(Player* player, Creature* creature)
 {
     ASSERT(player);
     ASSERT(creature);
+
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        if (e->OnGossipHello(player, creature))
+            return true;
+#endif
 
     auto ret = IsValidBoolScript<AllCreatureScript>([&](AllCreatureScript* script)
     {
@@ -85,6 +95,11 @@ bool ScriptMgr::OnQuestAccept(Player* player, Creature* creature, Quest const* q
     ASSERT(player);
     ASSERT(creature);
     ASSERT(quest);
+
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->OnQuestAccept(player, creature, quest);
+#endif
 
     auto ret = IsValidBoolScript<AllCreatureScript>([&](AllCreatureScript* script)
     {
@@ -149,6 +164,11 @@ uint32 ScriptMgr::GetDialogStatus(Player* player, Creature* creature)
     ASSERT(player);
     ASSERT(creature);
 
+#ifdef ELUNA
+    if (Eluna* e = player->GetEluna())
+        e->GetDialogStatus(player, creature);
+#endif
+
     auto tempScript = ScriptRegistry<CreatureScript>::GetScriptById(creature->GetScriptId());
     return tempScript ? tempScript->GetDialogStatus(player, creature) : DIALOG_STATUS_SCRIPTED_NO_STATUS;
 }
@@ -156,6 +176,12 @@ uint32 ScriptMgr::GetDialogStatus(Player* player, Creature* creature)
 CreatureAI* ScriptMgr::GetCreatureAI(Creature* creature)
 {
     ASSERT(creature);
+
+#ifdef ELUNA
+    if (Eluna* e = creature->GetEluna())
+        if (CreatureAI* luaAI = e->GetAI(creature))
+            return luaAI;
+#endif
 
     auto retAI = GetReturnAIScript<AllCreatureScript, CreatureAI>([creature](AllCreatureScript* script)
     {

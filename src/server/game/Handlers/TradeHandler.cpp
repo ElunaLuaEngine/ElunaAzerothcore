@@ -29,6 +29,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 void WorldSession::SendTradeStatus(TradeStatus status)
 {
@@ -324,6 +327,17 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& /*recvPacket*/)
             //}
         }
     }
+
+#ifdef ELUNA
+    if (Eluna* e = _player->GetEluna())
+    {
+        if (!e->OnTradeAccept(_player, trader))
+        {
+            SendTradeStatus(TRADE_STATUS_TRADE_CANCELED);
+            return;
+        }
+    }
+#endif
 
     if (his_trade->IsAccepted())
     {
@@ -635,6 +649,17 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         ChatHandler(this).SendNotification(LANG_TRADE_OTHER_REQ, sWorld->getIntConfig(CONFIG_TRADE_LEVEL_REQ));
         return;
     }
+
+#ifdef ELUNA
+    if (Eluna* e = _player->GetEluna())
+    {
+        if (!e->OnTradeInit(_player, pOther))
+        {
+            SendTradeStatus(TRADE_STATUS_BUSY);
+            return;
+        }
+    }
+#endif
 
     if (!sScriptMgr->OnPlayerCanInitTrade(_player, pOther))
         return;
