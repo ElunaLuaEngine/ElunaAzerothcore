@@ -3180,16 +3180,16 @@ ElunaEventProcessor * WorldObject::GetElunaEvents(int32 mapId)
     if (!mgr)
         return nullptr;
 
-        // Select the correct ProcessorInfo slot
-        std::unique_ptr<ElunaProcessorInfo>&info = (mapId == -1) ? elunaWorldEvents : elunaMapEvents;
+    // Select the correct ProcessorInfo slot
+    std::unique_ptr<ElunaProcessorInfo>&info = (mapId == -1) ? elunaWorldEvents : elunaMapEvents;
 
-        // Lazily create processor + ProcessorInfo handle
-        if (!info)
-        {
-            uint64 id = mgr->CreateObjectProcessor(this);
-            info = std::make_unique<ElunaProcessorInfo>(mgr, id);
-        }
+    // Lazily create processor + ProcessorInfo handle
+    if (!info)
+    {
+        uint64 id = mgr->CreateObjectProcessor(this);
+        info = std::make_unique<ElunaProcessorInfo>(mgr, id);
+    }
 
-        return mgr->GetObjectProcessor(info->GetProcessorId());
+    return mgr->GetObjectProcessor(info->GetProcessorId());
 }
 #endif
