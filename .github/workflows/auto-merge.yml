@@ -23,6 +23,7 @@ jobs:
     - name: Merge AzerothCore
       run: |
         git status
+        git config merge.ours.driver true
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git remote add AC https://github.com/azerothcore/azerothcore-wotlk.git
