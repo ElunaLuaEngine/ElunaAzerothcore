@@ -28,6 +28,3 @@
 
 # Ignore sql/* files
 data/sql/*    linguist-documentation
-
-# Only keep our forks workflows
-.github/workflows/*.yml merge=ours
