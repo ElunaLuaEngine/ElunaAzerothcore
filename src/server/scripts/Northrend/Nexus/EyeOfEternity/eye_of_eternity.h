@@ -54,10 +54,14 @@ enum NPCs
 enum Data
 {
     DATA_MALYGOS                = 0,
+    DATA_IRIS,
+    DATA_EXIT_PORTAL,
+    DATA_NEXUS_PLATFORM,
     DATA_IRIS_ACTIVATED,
     DATA_SET_IRIS_INACTIVE,
     DATA_HIDE_IRIS_AND_PORTAL,
-    DATA_MALYGOS_GUID,
+    DATA_VORTEX_HANDLING,
+    DATA_VORTEX_TRIGGER,
 };
 
 enum eSpells
@@ -76,7 +80,9 @@ enum eSpells
 
     SPELL_ALEXSTRASZA_GIFT              = 61028,
     SPELL_SUMMON_RED_DRAGON_BUDDY       = 56070,
-    SPELL_RIDE_RED_DRAGON               = 56072
+    SPELL_RIDE_RED_DRAGON               = 56072,
+
+    SPELL_VORTEX_4                      = 55853,
 };
 
 enum eAchiev
@@ -114,6 +120,8 @@ enum AlexstraszaEvents
 /*** POSITIONS/WAYPOINTS BELOW ***/
 
 const Position CenterPos = {754.395f, 1301.27f, 266.10f, 0.0f};
+const Position VortexPos = {754.393f, 1301.27f, 292.91f, 0.0f};
+const Position VortexLandPos = {754.362f, 1301.61f, 266.17f, 0.0f};
 
 const Position FourSidesPos[] =
 {
