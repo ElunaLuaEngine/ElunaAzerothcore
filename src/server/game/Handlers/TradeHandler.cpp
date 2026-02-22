@@ -343,7 +343,9 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& /*recvPacket*/)
     {
         if (!e->OnTradeAccept(_player, trader))
         {
-            SendTradeStatus(TRADE_STATUS_TRADE_CANCELED);
+            TradeStatusInfo info;
+            info.Status = TRADE_STATUS_TRADE_CANCELED;
+            SendTradeStatus(info);
             return;
         }
     }
@@ -687,7 +689,9 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
     {
         if (!e->OnTradeInit(_player, pOther))
         {
-            SendTradeStatus(TRADE_STATUS_BUSY);
+            TradeStatusInfo info;
+            info.Status = TRADE_STATUS_BUSY;
+            SendTradeStatus(info);
             return;
         }
     }
