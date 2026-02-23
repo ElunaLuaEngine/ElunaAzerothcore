@@ -746,7 +746,6 @@ struct npc_power_spark : public NullCreatureAI
     npc_power_spark(Creature* creature) : NullCreatureAI(creature)
     {
         _instance = me->GetInstanceScript();
-        me->CastSpell(me, SPELL_POWER_SPARK_VISUAL, false);
         _checkTimer = 1000;
         _moveTimer = 0;
     }
@@ -1138,19 +1137,6 @@ struct npc_eoe_wyrmrest_skytalon : public VehicleAI
     }
 };
 
-struct go_the_focusing_iris : public GameObjectAI
-{
-    go_the_focusing_iris(GameObject* go) : GameObjectAI(go) { }
-
-    bool GossipHello(Player* /*user*/, bool /*reportUse*/) override
-    {
-        if (InstanceScript* instance = me->GetInstanceScript())
-            instance->SetData(DATA_IRIS_ACTIVATED, 0);
-
-        return true;
-    }
-};
-
 // 56105 - Vortex
 class spell_malygos_vortex_dummy : public SpellScript
 {
@@ -1316,7 +1302,6 @@ void AddSC_boss_malygos()
     RegisterEoECreatureAI(boss_malygos);
     RegisterEoECreatureAI(npc_power_spark);
     RegisterEoECreatureAI(npc_alexstrasza);
-    RegisterGameObjectAI(go_the_focusing_iris);
     RegisterEoECreatureAI(npc_nexus_lord);
     RegisterEoECreatureAI(npc_scion_of_eternity);
     RegisterEoECreatureAI(npc_hover_disk);
