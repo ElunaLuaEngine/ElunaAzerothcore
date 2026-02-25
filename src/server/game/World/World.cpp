@@ -144,6 +144,10 @@ World::~World()
 
     VMAP::VMapFactory::clear();
     MMAP::MMapFactory::clear();
+#ifdef ELUNA
+    if (GetEluna())
+        sElunaMgr->Destroy(_elunaInfo);
+#endif
 }
 
 std::unique_ptr<IWorld>& getWorldInstance()
