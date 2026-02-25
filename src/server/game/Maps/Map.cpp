@@ -68,6 +68,10 @@ Map::~Map()
         sScriptMgr->DecreaseScheduledScriptCount(m_scriptSchedule.size());
 
     MMAP::MMapFactory::createOrGetMMapMgr()->unloadMapInstance(GetId(), i_InstanceId);
+#ifdef ELUNA
+    if (GetEluna())
+        sElunaMgr->Destroy(_elunaInfo);
+#endif
 }
 
 Map::Map(uint32 id, uint32 InstanceId, uint8 SpawnMode, Map* _parent) :
