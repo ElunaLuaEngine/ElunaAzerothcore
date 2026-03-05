@@ -190,14 +190,10 @@ class spell_pal_seal_of_command_aura : public AuraScript
     void HandleProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
     {
         PreventDefaultAction();
-        int32 targets = 3;
-        if (SpellInfo const* procSpell = eventInfo.GetSpellInfo())
-        {
-            if (procSpell->IsAffectingArea())
-            {
-                targets = 1;
-            }
-        }
+        // Only auto-attacks (no spell info) should trigger SoC's cleave.
+        // Spells like HotR/ShoR should proc SoC but not cleave.
+        // Judgement cleave is handled separately via JotJ code path.
+        int32 targets = eventInfo.GetSpellInfo() ? 1 : 3;
 
         Unit* target = eventInfo.GetActionTarget();
         if (target->IsAlive())
@@ -1975,8 +1971,10 @@ class spell_pal_seal_of_vengeance_aura : public AuraScript
     void Register() override
     {
         DoCheckProc += AuraCheckProcFn(spell_pal_seal_of_vengeance_aura::CheckProc);
-        OnEffectProc += AuraEffectProcFn(spell_pal_seal_of_vengeance_aura::HandleApplyDoT, EFFECT_0, SPELL_AURA_DUMMY);
+        // HandleSeal reads stacks BEFORE HandleApplyDoT increments them,
+        // so the attacking hit does not benefit from its own stack application.
         OnEffectProc += AuraEffectProcFn(spell_pal_seal_of_vengeance_aura::HandleSeal, EFFECT_0, SPELL_AURA_DUMMY);
+        OnEffectProc += AuraEffectProcFn(spell_pal_seal_of_vengeance_aura::HandleApplyDoT, EFFECT_0, SPELL_AURA_DUMMY);
     }
 
 private:

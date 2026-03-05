@@ -1380,7 +1380,7 @@ public:
 
     bool operator()(WorldObject* target) const
     {
-        //! No players, only vehicles (todo: check if blizzlike)
+        //! No players, only vehicles. Pursue is never cast on players.
         Creature* creatureTarget = target->ToCreature();
         if (!creatureTarget)
             return true;
@@ -1415,12 +1415,7 @@ class spell_pursue : public SpellScript
     void FilterTargets(std::list<WorldObject*>& targets)
     {
         targets.remove_if(FlameLeviathanPursuedTargetSelector());
-        if (targets.empty())
-        {
-            if (Creature* caster = GetCaster()->ToCreature())
-                caster->AI()->EnterEvadeMode();
-        }
-        else
+        if (!targets.empty())
         {
             //! In the end, only one target should be selected
             WorldObject* _target = Acore::Containers::SelectRandomContainerElement(targets);
