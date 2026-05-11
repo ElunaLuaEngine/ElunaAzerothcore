@@ -40,6 +40,7 @@
 #include "MapMgr.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "RBAC.h"
 #include "RaceMgr.h"
 #include "ReputationMgr.h"
 #include "ScriptMgr.h"
@@ -523,6 +524,8 @@ void AchievementMgr::ResetAchievementCriteria(AchievementCriteriaCondition condi
     // disable for gamemasters with GM-mode enabled
     if (_player->IsGameMaster())
         return;
+    if (_player->GetSession()->HasPermission(rbac::RBAC_PERM_CANNOT_EARN_ACHIEVEMENTS))
+        return;
 
     LOG_DEBUG("achievement", "AchievementMgr::ResetAchievementCriteria({}, {}, {})", condition, value, evenIfCriteriaComplete);
 
@@ -823,6 +826,8 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
 {
     // disable for gamemasters with GM-mode enabled
     if (_player->IsGameMaster())
+        return;
+    if (_player->GetSession()->HasPermission(rbac::RBAC_PERM_CANNOT_EARN_ACHIEVEMENTS))
         return;
 
     if (type >= ACHIEVEMENT_CRITERIA_TYPE_TOTAL)
@@ -2285,6 +2290,8 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
         ChatHandler(_player->GetSession()).PSendSysMessage("Not available in GM mode");
         return;
     }
+    if (_player->GetSession()->HasPermission(rbac::RBAC_PERM_CANNOT_EARN_ACHIEVEMENTS))
+        return;
 
     if (!sScriptMgr->OnPlayerBeforeAchievementComplete(GetPlayer(), achievement))
     {
@@ -2326,7 +2333,7 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
                     }
     }
 
-    if (achievement->flags & (ACHIEVEMENT_FLAG_REALM_FIRST_REACH | ACHIEVEMENT_FLAG_REALM_FIRST_KILL) && AccountMgr::IsPlayerAccount(_player->GetSession()->GetSecurity()))
+    if (achievement->flags & (ACHIEVEMENT_FLAG_REALM_FIRST_REACH | ACHIEVEMENT_FLAG_REALM_FIRST_KILL) && !_player->GetSession()->HasPermission(rbac::RBAC_PERM_CANNOT_EARN_REALM_FIRST_ACHIEVEMENTS))
         sAchievementMgr->SetRealmCompleted(achievement);
 
     UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_ACHIEVEMENT, achievement->ID);
