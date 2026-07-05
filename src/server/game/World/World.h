@@ -252,6 +252,7 @@ public:
 #endif
 protected:
     void _UpdateGameTime();
+    bool RescheduleShutdownForWintergrasp();
     // callback for UpdateRealmCharacters
     void _UpdateRealmCharCount(PreparedQueryResult resultCharCount,uint32 accountId);
 
