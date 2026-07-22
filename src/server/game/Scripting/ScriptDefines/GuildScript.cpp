@@ -40,7 +40,7 @@ void ScriptMgr::OnGuildRemoveMember(Guild* guild, Player* player, bool isDisband
     CALL_ENABLED_HOOKS(GuildScript, GUILDHOOK_ON_REMOVE_MEMBER, script->OnRemoveMember(guild, player, isDisbanding, isKicked));
 }
 
-void ScriptMgr::OnGuildMOTDChanged(Guild* guild, const std::string& newMotd)
+void ScriptMgr::OnGuildMOTDChanged(Guild* guild, std::string const& newMotd)
 {
 #ifdef ELUNA
     if (Eluna* e = sWorld->GetEluna())
@@ -49,7 +49,7 @@ void ScriptMgr::OnGuildMOTDChanged(Guild* guild, const std::string& newMotd)
     CALL_ENABLED_HOOKS(GuildScript, GUILDHOOK_ON_MOTD_CHANGED, script->OnMOTDChanged(guild, newMotd));
 }
 
-void ScriptMgr::OnGuildInfoChanged(Guild* guild, const std::string& newInfo)
+void ScriptMgr::OnGuildInfoChanged(Guild* guild, std::string const& newInfo)
 {
 #ifdef ELUNA
     if (Eluna* e = sWorld->GetEluna())
@@ -58,7 +58,7 @@ void ScriptMgr::OnGuildInfoChanged(Guild* guild, const std::string& newInfo)
     CALL_ENABLED_HOOKS(GuildScript, GUILDHOOK_ON_INFO_CHANGED, script->OnInfoChanged(guild, newInfo));
 }
 
-void ScriptMgr::OnGuildCreate(Guild* guild, Player* leader, const std::string& name)
+void ScriptMgr::OnGuildCreate(Guild* guild, Player* leader, std::string const& name)
 {
 #ifdef ELUNA
     if (Eluna* e = sWorld->GetEluna())
@@ -126,7 +126,7 @@ bool ScriptMgr::CanGuildSendBankList(Guild const* guild, WorldSession* session, 
     CALL_ENABLED_BOOLEAN_HOOKS(GuildScript, GUILDHOOK_CAN_GUILD_SEND_BANK_LIST, !script->CanGuildSendBankList(guild, session, tabId, sendAllSlots));
 }
 
-GuildScript::GuildScript(const char* name, std::vector<uint16> enabledHooks)
+GuildScript::GuildScript(char const* name, std::vector<uint16> enabledHooks)
     : ScriptObject(name, GUILDHOOK_END)
 {
     // If empty - enable all available hooks.

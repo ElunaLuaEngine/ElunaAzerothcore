@@ -1088,7 +1088,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
 
                     uint32 counter = 0;
 
-                    const RewardedQuestSet& rewQuests = GetPlayer()->getRewardedQuests();
+                    RewardedQuestSet const& rewQuests = GetPlayer()->getRewardedQuests();
                     for (RewardedQuestSet::const_iterator itr = rewQuests.begin(); itr != rewQuests.end(); ++itr)
                     {
                         Quest const* quest = sObjectMgr->GetQuestTemplate(*itr);
@@ -2189,7 +2189,7 @@ void AchievementMgr::SetCriteriaProgress(AchievementCriteriaEntry const* entry, 
     sScriptMgr->OnPlayerCriteriaProgress(GetPlayer(), entry);
 }
 
-void AchievementMgr::RemoveCriteriaProgress(const AchievementCriteriaEntry* entry)
+void AchievementMgr::RemoveCriteriaProgress(AchievementCriteriaEntry const* entry)
 {
     CriteriaProgressMap::iterator criteriaProgress = _criteriaProgress.find(entry->ID);
     if (criteriaProgress == _criteriaProgress.end())
@@ -2982,7 +2982,7 @@ void AchievementGlobalMgr::LoadCompletedAchievements()
         Field* fields = result->Fetch();
 
         uint16 achievementId = fields[0].Get<uint16>();
-        const AchievementEntry* achievement = sAchievementStore.LookupEntry(achievementId);
+        AchievementEntry const* achievement = sAchievementStore.LookupEntry(achievementId);
         if (!achievement)
         {
             // Remove non existent achievements from all characters

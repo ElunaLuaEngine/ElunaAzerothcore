@@ -66,7 +66,7 @@ void ScriptMgr::OnGameObjectSaveToDB(GameObject* go)
     });
 }
 
-AllGameObjectScript::AllGameObjectScript(const char* name) :
+AllGameObjectScript::AllGameObjectScript(char const* name) :
     ScriptObject(name)
 {
     ScriptRegistry<AllGameObjectScript>::AddScript(this);
