@@ -48,6 +48,8 @@ if (BUILD_TOOLS_MAPS)
   add_subdirectory(fkYAML)
 endif()
 
+add_subdirectory(libsidecar)
+
 if (ELUNA)
   add_subdirectory(lualib)
 endif()
