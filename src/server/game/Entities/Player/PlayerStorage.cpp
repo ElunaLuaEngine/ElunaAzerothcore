@@ -3088,7 +3088,7 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
 }
 
 // Common operation need to add item from inventory without delete in trade, guild bank, mail....
-void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool update, bool in_characterInventoryDB)
+Item* Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool update, bool in_characterInventoryDB)
 {
     // update quest counters
     ItemAddedQuestCheck(pItem->GetEntry(), pItem->GetCount());
@@ -3111,6 +3111,10 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
         if (pLastItem->IsBOPTradable())
             AddTradeableItem(pLastItem);
     }
+
+    sScriptMgr->OnPlayerAfterMoveItemToInventory(this, pLastItem, update);
+
+    return pLastItem;
 }
 
 void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
