@@ -5885,6 +5885,13 @@ void Player::_LoadAuras(PreparedQueryResult result, uint32 timediff)
                 continue;
             }
 
+            // auras without a caster guid cannot be restored (Aura::TryCreate requires one)
+            if (!caster_guid)
+            {
+                LOG_ERROR("entities.player", "Aura (spellid {}) with empty caster guid, ignore.", spellid);
+                continue;
+            }
+
             // Xinef: leave this
             if (spellInfo->HasAura(SPELL_AURA_MOUNTED))
             {
@@ -6209,6 +6216,8 @@ Item* Player::_LoadItem(CharacterDatabaseTransaction trans, uint32 zoneId, uint3
             }
             else if (proto->HolidayId)
             {
+                // matches on holiday id alone, unlike IsHolidayActive(): a stage aware check here
+                // would delete holiday items on login while a building stage runs
                 remove = true;
                 GameEventMgr::GameEventDataMap const& events = sGameEventMgr->GetEventMap();
                 GameEventMgr::ActiveEvents const& activeEventsList = sGameEventMgr->GetActiveEventList();
@@ -7310,7 +7319,7 @@ void Player::SaveToDB(CharacterDatabaseTransaction trans, bool create, bool logo
 
     // check if stats should only be saved on logout
     // save stats can be out of transaction
-    if (m_session->isLogingOut() || !sWorld->getBoolConfig(CONFIG_STATS_SAVE_ONLY_ON_LOGOUT))
+    if (m_session->IsLoggingOut() || !sWorld->getBoolConfig(CONFIG_STATS_SAVE_ONLY_ON_LOGOUT))
         _SaveStats(trans);
 
     // save pet (hunter pet level and experience and all type pets health/mana).

@@ -3,13 +3,17 @@
 package effects_test
 
 import (
+	"fmt"
+	"math"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/azerothcore/azerothcore-wotlk/e2e/internal/meta"
 	"github.com/azerothcore/AzerothGhost/e2e/e2eharness"
+	"github.com/azerothcore/azerothcore-wotlk/e2e/internal/meta"
 )
 
 // OPEN(e2e): re-enable when AC#26774 is fixed
@@ -124,7 +128,7 @@ func TestAC_26997_SweepingStrikesExecuteNoCrash(t *testing.T) {
 	const (
 		spellExecuteMax = uint32(47471) // WotLK Execute rank 9
 		// High-HP test dummies with empty ScriptName (they take damage). L1-L6
-		// world mobs die to a L80 autoattack during DamageToFraction.
+		// world mobs die to a L80 autoattack before reaching Execute range.
 		unkillableDummy80      = uint32(32171)
 		unkillableDummy80Armor = uint32(32847) // different entry — Spawn despawns nearby same-entry
 	)
@@ -169,8 +173,8 @@ func TestAC_26997_SweepingStrikesExecuteNoCrash(t *testing.T) {
 	if c1 == 0 || c2 == 0 {
 		e2eharness.Preconditionf(t, "failed to spawn Execute targets c1=0x%X c2=0x%X", c1, c2)
 	}
-	arms.DamageToFraction(t, c1, 0.19, 20*time.Second)
-	arms.DamageToFraction(t, c2, 0.19, 20*time.Second)
+	damageToExecuteRange(t, arms, c1)
+	damageToExecuteRange(t, arms, c2)
 	for _, v := range []struct {
 		name string
 		g    uint64
@@ -182,6 +186,14 @@ func TestAC_26997_SweepingStrikesExecuteNoCrash(t *testing.T) {
 	}
 
 	arms.CastMust(t, e2eharness.SpellSweepingStrikes, 0, 10*time.Second)
+	// CastMust returns on SMSG_SPELL_GO; the aura lands in a later aura update.
+	deadline = time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		if arms.HasAura(e2eharness.SpellSweepingStrikes) {
+			break
+		}
+		time.Sleep(40 * time.Millisecond)
+	}
 	if !arms.HasAura(e2eharness.SpellSweepingStrikes) {
 		e2eharness.Preconditionf(t, "Sweeping Strikes aura %d missing", e2eharness.SpellSweepingStrikes)
 	}
@@ -197,6 +209,35 @@ func TestAC_26997_SweepingStrikesExecuteNoCrash(t *testing.T) {
 		e2eharness.Assertf(t, "Execute failed reason=%s", e2eharness.SpellFailReasonName(res.FailReason))
 	}
 	t.Logf("PASS AC#26997 Sweeping Strikes Execute world alive (c1=0x%X c2=0x%X)", c1, c2)
+}
+
+// damageToExecuteRange takes guid to 15% health with a single `.damage` sized from a fresh read,
+// then waits for the health update. DamageToFraction sends a 1/5-health chunk every 50ms against
+// the cached health, so on a slow world tick the cache trails the hits and every chunk lands: CI
+// killed 32171 at 0/25200000 that way. `.damage <amount>` is a plain DealDamage, so one hit is exact.
+func damageToExecuteRange(t *testing.T, bot *e2eharness.ScenarioBot, guid uint64) {
+	t.Helper()
+	hp, maxHP := bot.WaitUnitHPKnown(t, guid, 5*time.Second)
+	if want := maxHP / 100 * 15; hp > want {
+		bot.Damage(t, guid, hp-want)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		hp, maxHP = bot.UnitHP(guid)
+		if maxHP == 0 {
+			time.Sleep(40 * time.Millisecond)
+			continue
+		}
+		if hp == 0 {
+			e2eharness.Preconditionf(t, "unit 0x%X died while damaged to Execute range (max=%d)", guid, maxHP)
+		}
+		if float64(hp)/float64(maxHP) <= 0.2 {
+			t.Logf("damaged unit 0x%X to Execute range (hp=%d/%d)", guid, hp, maxHP)
+			return
+		}
+		time.Sleep(40 * time.Millisecond)
+	}
+	e2eharness.Preconditionf(t, "unit 0x%X not in Execute range after .damage (hp=%d/%d)", guid, hp, maxHP)
 }
 
 // FX-04: grounding totem summon exists (#26584 ecosystem).
@@ -230,4 +271,204 @@ func TestEffects_AddItemCreatePath(t *testing.T) {
 	bot.AddItemWait(t, e2eharness.ItemCorpseDust, 3)
 	bot.AssertInventoryAtLeast(t, e2eharness.ItemCorpseDust, 3)
 	t.Logf("PASS create-item seed path count>=3")
+}
+
+// PR: https://github.com/azerothcore/azerothcore-wotlk/pull/27621
+// Spell::EffectForceCast handed the forced cast the original caster as its unit target. When the
+// triggered spell takes no unit target but does need a destination, Spell::InitExplicitTargets
+// turns that unit target into the destination, so the forced cast resolves against the unit that
+// forced the cast instead of against the unit that was forced to cast it.
+//
+// Both trigger shapes are covered: 62221 and 62293 summon at the destination itself, while 48757
+// summons at a fixed offset behind it (TARGET_DEST_DEST_BACK).
+func TestEffects_ForceCastDestination(t *testing.T) {
+	meta.Begin(t, meta.TestMeta{Tags: []string{"med", "spells"}, Runtime: "med", Category: "spells/effects"})
+
+	const (
+		// Northshire open strip (map 0): flat ground, and no ambient summons of these entries to
+		// confuse a placement oracle.
+		stripX   float32 = -8904.0
+		stripY   float32 = -128.0
+		stripZ   float32 = 81.0
+		stripMap uint32  = 0
+
+		// Unkillable Test Dummy 80: faction 7, so the bot is a valid TARGET_UNIT_SRC_AREA_ENEMY
+		// pick for the area force-casts, and no ScriptName to interfere.
+		driverEntry = uint32(32171)
+
+		// The driver's own summon lands on the driver, so bot and driver must stand further apart
+		// than any oracle radius below.
+		driverStandOff = float32(15)
+		cacheRange     = float32(90)
+		summonWait     = 12 * time.Second
+	)
+
+	bot := e2eharness.NewSolo(t, e2eharness.ScenarioOpts{
+		Prefix: "FxFC",
+		Level:  80,
+	})
+
+	// GM command failures are reported as system chat only, so a drive that summons nothing would
+	// otherwise be indistinguishable from a placement bug.
+	var chatMu sync.Mutex
+	var chat []string
+	bot.World.OnChatMessage = func(_, msg string, _ uint8) {
+		chatMu.Lock()
+		chat = append(chat, msg)
+		chatMu.Unlock()
+	}
+	lastChat := func(n int) string {
+		chatMu.Lock()
+		defer chatMu.Unlock()
+		if len(chat) < n {
+			n = len(chat)
+		}
+		return strings.Join(chat[len(chat)-n:], " | ")
+	}
+
+	bot.Teleport(t, stripX, stripY, stripZ, stripMap)
+	bot.CombatReady(t)
+	driver := bot.Spawn(t, driverEntry, 20*time.Second)
+	if driver == 0 {
+		e2eharness.Preconditionf(t, "no force-cast driver %d spawned", driverEntry)
+	}
+	// .npc add drops the driver on the bot, where both candidate destinations coincide.
+	bot.Teleport(t, stripX+driverStandOff, stripY, stripZ, stripMap)
+	bot.CombatReady(t)
+	bot.CombatStop(t)
+	driver = bot.WaitUnit(t, driverEntry, 20*time.Second) // the tele cleared the object cache
+	if driver == 0 {
+		e2eharness.Preconditionf(t, "driver %d not back in cache after stepping clear", driverEntry)
+	}
+
+	for _, tc := range []struct {
+		name        string
+		spellID     uint32
+		summonEntry uint32
+		onCaster    float32
+		what        string
+	}{
+		// 62207 summons 33050 at the caster and force-casts 62221 on every player within 100 yd;
+		// 62221 summons at its own caster's position.
+		{"UnstableSunBeam", 62207, 33050, 4, "at the forced caster"},
+		// 62301 force-casts 62293 on enemies within 100 yd; 62293 summons the crater marker at its
+		// own caster's position. This is the path the removed SpellInfoCorrections entry covered.
+		{"CosmicSmash", 62301, 33104, 4, "at the forced caster"},
+		// 48759 force-casts 48757 on its explicit target; 48757 summons 3 yd behind the
+		// destination, so the offset shape is covered too.
+		{"SummonBehindForcedCaster", 48759, 27439, 6, "3 yd behind the forced caster"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			known := summonGUIDs(summonsInCache(bot, tc.summonEntry, cacheRange))
+			bot.Face(t, driver)
+			bot.FlushWorld(t)
+			// No "triggered": TRIGGERED_FULL_DEBUG_MASK carries TRIGGERED_IGNORE_EFFECTS, which
+			// would send the cast without running a single effect.
+			bot.GM(t, fmt.Sprintf(".cast back %d", tc.spellID))
+
+			fresh := waitNewSummons(bot, tc.summonEntry, cacheRange, known, summonWait)
+			if len(fresh) == 0 {
+				e2eharness.Preconditionf(t, "%d force-cast produced no new %d within %s (last chat: %s) (cache: %s)",
+					tc.spellID, tc.summonEntry, summonWait, lastChat(3), dumpNearby(bot, cacheRange))
+			}
+			drv := bot.World.GetObject(driver)
+			if drv == nil {
+				e2eharness.Preconditionf(t, "driver 0x%X left the object cache before the summon landed", driver)
+			}
+			bx, by, bz, _ := bot.Pos()
+			for _, s := range fresh {
+				t.Logf("%d -> %d guid=0x%X at (%.1f,%.1f,%.1f) dist bot=%.1f driver=%.1f",
+					tc.spellID, tc.summonEntry, s.guid, s.x, s.y, s.z,
+					e2eharness.Distance3D(bx, by, bz, s.x, s.y, s.z),
+					e2eharness.Distance3D(drv.PosX, drv.PosY, drv.PosZ, s.x, s.y, s.z))
+			}
+			near, toBot := nearestSummon(fresh, bx, by, bz)
+			toDriver := e2eharness.Distance3D(drv.PosX, drv.PosY, drv.PosZ, near.x, near.y, near.z)
+			if toBot > tc.onCaster {
+				e2eharness.Assertf(t, "%d: nearest of %d summoned %d sits %.1fy from the forced caster and %.1fy from the original caster, expected %s - the forced cast inherited the original caster as its destination",
+					tc.spellID, len(fresh), tc.summonEntry, toBot, toDriver, tc.what)
+			}
+			t.Logf("PASS %d summoned %d %.1fy from the forced caster (%.1fy from the original caster)",
+				tc.spellID, tc.summonEntry, toBot, toDriver)
+		})
+	}
+}
+
+type forceCastSummon struct {
+	guid    uint64
+	x, y, z float32
+}
+
+// summonsInCache snapshots every tracked unit of one template within maxDist.
+func summonsInCache(bot *e2eharness.ScenarioBot, entry uint32, maxDist float32) []forceCastSummon {
+	var out []forceCastSummon
+	for _, u := range bot.World.GetNearbyUnits(maxDist) {
+		if u.Entry != entry {
+			continue
+		}
+		out = append(out, forceCastSummon{guid: u.GUID, x: u.PosX, y: u.PosY, z: u.PosZ})
+	}
+	return out
+}
+
+func summonGUIDs(summons []forceCastSummon) map[uint64]struct{} {
+	out := make(map[uint64]struct{}, len(summons))
+	for _, s := range summons {
+		out[s.guid] = struct{}{}
+	}
+	return out
+}
+
+func newSummons(bot *e2eharness.ScenarioBot, entry uint32, maxDist float32, known map[uint64]struct{}) []forceCastSummon {
+	var out []forceCastSummon
+	for _, s := range summonsInCache(bot, entry, maxDist) {
+		if _, seen := known[s.guid]; seen {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// waitNewSummons waits for a unit of entry that was not in known, then settles briefly so a second
+// summon from the same cast (62207 also places one on its own caster) joins the same batch.
+// Novelty by GUID is what keeps a permanent summon left by an earlier run out of the oracle.
+func waitNewSummons(bot *e2eharness.ScenarioBot, entry uint32, maxDist float32,
+	known map[uint64]struct{}, timeout time.Duration) []forceCastSummon {
+	deadline := time.Now().Add(timeout)
+	for {
+		if fresh := newSummons(bot, entry, maxDist, known); len(fresh) > 0 {
+			time.Sleep(700 * time.Millisecond)
+			return newSummons(bot, entry, maxDist, known)
+		}
+		if !time.Now().Before(deadline) {
+			return nil
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+}
+
+// dumpNearby lists the tracked units around the bot, so a drive that summoned nothing can be told
+// apart from a summon the client never received.
+func dumpNearby(bot *e2eharness.ScenarioBot, maxDist float32) string {
+	bx, by, bz, _ := bot.Pos()
+	var parts []string
+	for _, u := range bot.World.GetNearbyUnits(maxDist) {
+		parts = append(parts, fmt.Sprintf("%d@%.0fy", u.Entry, e2eharness.Distance3D(bx, by, bz, u.PosX, u.PosY, u.PosZ)))
+	}
+	if len(parts) == 0 {
+		return "no units tracked"
+	}
+	return strings.Join(parts, ",")
+}
+
+func nearestSummon(summons []forceCastSummon, x, y, z float32) (forceCastSummon, float32) {
+	var best forceCastSummon
+	bestDist := float32(math.MaxFloat32)
+	for _, s := range summons {
+		if d := e2eharness.Distance3D(x, y, z, s.x, s.y, s.z); d < bestDist {
+			best, bestDist = s, d
+		}
+	}
+	return best, bestDist
 }
