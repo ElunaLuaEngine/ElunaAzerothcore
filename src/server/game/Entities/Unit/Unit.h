@@ -31,6 +31,7 @@
 #include "ThreatManager.h"
 #include "UnitDefines.h"
 #include "UnitUtils.h"
+#include <array>
 #include <boost/container/flat_map.hpp>
 #include <functional>
 #include <utility>
@@ -210,8 +211,12 @@ enum class DeathState : uint8
     JustRespawned = 4,
 };
 
-extern float baseMoveSpeed[MAX_MOVE_TYPE];
-extern float playerBaseMoveSpeed[MAX_MOVE_TYPE];
+extern std::array<float, MAX_MOVE_TYPE> baseMoveSpeed;
+extern std::array<float, MAX_MOVE_TYPE> playerBaseMoveSpeed;
+
+// Sets baseMoveSpeed (NPCs) and playerBaseMoveSpeed to the default speeds times
+// the given rates. Recomputed from the defaults, so a config reload doesn't compound.
+void ApplyMoveSpeedRates(float npcRate, float playerRate);
 
 enum WeaponAttackType : uint8
 {
@@ -1172,6 +1177,7 @@ public:
 
     [[nodiscard]] float GetUnitMissChance(WeaponAttackType attType) const;
     float GetUnitCriticalChance(WeaponAttackType attackType, Unit const* victim) const;
+    [[nodiscard]] float GetCritChanceFromSkillDiff(Unit const* victim) const;
     MeleeHitOutcome RollMeleeOutcomeAgainst (Unit const* victim, WeaponAttackType attType) const;
     MeleeHitOutcome RollMeleeOutcomeAgainst (Unit const* victim, WeaponAttackType attType, int32 crit_chance, int32 miss_chance, int32 dodge_chance, int32 parry_chance, int32 block_chance) const;
 
@@ -1982,7 +1988,7 @@ public:
     virtual float GetNativeObjectScale() const { return 1.0f; }
     virtual void RecalculateObjectScale();
     [[nodiscard]] uint32 GetDisplayId() const { return GetUInt32Value(UNIT_FIELD_DISPLAYID); }
-    virtual void SetDisplayId(uint32 modelId, float displayScale = 1.f);
+    virtual void SetDisplayId(uint32 modelId, std::optional<float> displayScale = {});
     [[nodiscard]] uint32 GetNativeDisplayId() const { return GetUInt32Value(UNIT_FIELD_NATIVEDISPLAYID); }
     void RestoreDisplayId();
     void SetNativeDisplayId(uint32 displayId) { SetUInt32Value(UNIT_FIELD_NATIVEDISPLAYID, displayId); }
@@ -2262,6 +2268,7 @@ private:
     uint32 _lastExtraAttackSpell;
     std::unordered_map<ObjectGuid /*guid*/, uint32 /*count*/> extraAttacksTargets;
     ObjectGuid _lastDamagedTargetGuid;
+    std::optional<float> _displayScale; ///< scale passed with the current display, empty = native scale
 
     typedef std::unordered_map<uint64 /*visibleFlag(uint32) + updateType(uint8)*/, BuildValuesCachedBuffer>  ValuesUpdateCache;
     ValuesUpdateCache _valuesUpdateCache;
